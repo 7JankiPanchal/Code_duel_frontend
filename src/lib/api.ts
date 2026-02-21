@@ -248,6 +248,13 @@ export const dashboardApi = {
     );
     return response.data;
   },
+
+  getGlobalLeaderboard: async () => {
+    const response = await api.get<ApiResponse<any[]>>(
+      "/api/dashboard/leaderboard"
+    );
+    return response.data;
+  },
 };
 
 // ============================================================================
