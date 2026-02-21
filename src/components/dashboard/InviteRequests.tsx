@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { CheckCircle2, XCircle, Mail, Loader2, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,12 +14,22 @@ const InviteRequests: React.FC = () => {
   const [invites, setInvites] = useState<ChallengeInvite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [respondingId, setRespondingId] = useState<string | null>(null);
+  const [respondingAction, setRespondingAction] = useState<"accepted" | "rejected" | null>(null);
+  const isMountedRef = useRef(true);
+
+  // Track mount status to avoid updating state after unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const loadInvites = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await inviteApi.getMyInvites();
-      if (response.success && response.data) {
+      if (isMountedRef.current && response.success && response.data) {
         const pending = (response.data as ChallengeInvite[]).filter(
           (inv) => inv.status === "pending"
         );
@@ -28,7 +38,7 @@ const InviteRequests: React.FC = () => {
     } catch {
       // Silently fail — not critical for dashboard render
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) setIsLoading(false);
     }
   }, []);
 
@@ -41,11 +51,13 @@ const InviteRequests: React.FC = () => {
     action: "accepted" | "rejected"
   ) => {
     setRespondingId(invite.id);
+    setRespondingAction(action);
     try {
       const response =
         action === "accepted"
           ? await inviteApi.acceptInvite(invite.challengeId)
           : await inviteApi.rejectInvite(invite.challengeId);
+      if (!isMountedRef.current) return;
       if (response.success) {
         // Remove the invite from the list regardless of action
         setInvites((prev) => prev.filter((inv) => inv.id !== invite.id));
@@ -61,6 +73,7 @@ const InviteRequests: React.FC = () => {
         throw new Error(response.message || "Failed to respond to invite");
       }
     } catch (error: unknown) {
+      if (!isMountedRef.current) return;
       const message =
         (error as { response?: { data?: { message?: string } }; message?: string })
           ?.response?.data?.message ??
@@ -72,7 +85,10 @@ const InviteRequests: React.FC = () => {
         variant: "destructive",
       });
     } finally {
-      setRespondingId(null);
+      if (isMountedRef.current) {
+        setRespondingId(null);
+        setRespondingAction(null);
+      }
     }
   };
 
@@ -86,7 +102,12 @@ const InviteRequests: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-6">
+          <div
+            className="flex items-center justify-center py-6"
+            role="status"
+            aria-live="polite"
+          >
+            <span className="sr-only">Loading challenge invites…</span>
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         </CardContent>
@@ -153,7 +174,7 @@ const InviteRequests: React.FC = () => {
                     onClick={() => handleRespond(invite, "accepted")}
                     disabled={isResponding}
                   >
-                    {isResponding ? (
+                    {isResponding && respondingAction === "accepted" ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <CheckCircle2 className="h-3.5 w-3.5" />
@@ -171,7 +192,7 @@ const InviteRequests: React.FC = () => {
                     onClick={() => handleRespond(invite, "rejected")}
                     disabled={isResponding}
                   >
-                    {isResponding ? (
+                    {isResponding && respondingAction === "rejected" ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <XCircle className="h-3.5 w-3.5" />

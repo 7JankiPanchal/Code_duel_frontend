@@ -274,16 +274,18 @@ const ChallengePage: React.FC = () => {
         </Tabs>
       </div>
 
-      {/* Invite Users Dialog — only rendered for private challenge owners */}
-      {challenge.isPrivate && challenge.ownerId === user?.id && (
-        <InviteUserDialog
-          open={isInviteDialogOpen}
-          onOpenChange={setIsInviteDialogOpen}
-          challengeId={challenge.id}
-          challengeName={challenge.name}
-          existingMemberIds={leaderboard.map((m) => m.userId || m.id)}
-        />
-      )}
+      {/* Invite Users Dialog — open prop guards access; always mounted to avoid async teardown issues */}
+      <InviteUserDialog
+        open={
+          Boolean(challenge.isPrivate) &&
+          challenge.ownerId === user?.id &&
+          isInviteDialogOpen
+        }
+        onOpenChange={setIsInviteDialogOpen}
+        challengeId={challenge.id}
+        challengeName={challenge.name}
+        existingMemberIds={leaderboard.map((m) => m.userId || m.id)}
+      />
     </Layout>
   );
 };

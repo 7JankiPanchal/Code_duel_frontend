@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Search, UserPlus, Loader2, Check } from "lucide-react";
 import {
   Dialog,
@@ -39,6 +39,15 @@ const InviteUserDialog: React.FC<InviteUserDialogProps> = ({
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
   const [sendingId, setSendingId] = useState<string | null>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear pending debounce on unmount to prevent state updates on an unmounted component
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSearch = (value: string) => {
     setQuery(value);
@@ -135,10 +144,15 @@ const InviteUserDialog: React.FC<InviteUserDialogProps> = ({
           </div>
 
           {/* Results */}
-          <ScrollArea className="h-64">
+          <ScrollArea className="h-64" aria-busy={isSearching} aria-live="polite">
             {isSearching && (
-              <div className="flex items-center justify-center py-8">
+              <div
+                className="flex items-center justify-center py-8"
+                role="status"
+                aria-live="polite"
+              >
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <span className="sr-only">Searching for users…</span>
               </div>
             )}
 

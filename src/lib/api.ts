@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from "axios";
+import type { ChallengeInvite, UserSearchResult } from "@/types";
 
 // API Base URL - Change this to your backend URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -204,7 +205,7 @@ export const challengeApi = {
 export const inviteApi = {
   // POST /api/challenge/:id/invite
   sendInvite: async (challengeId: string, userId: string) => {
-    const response = await api.post<ApiResponse<any>>(
+    const response = await api.post<ApiResponse<ChallengeInvite>>(
       `/api/challenge/${challengeId}/invite`,
       { userId }
     );
@@ -212,13 +213,13 @@ export const inviteApi = {
   },
 
   getMyInvites: async () => {
-    const response = await api.get<ApiResponse<any[]>>("/api/invites");
+    const response = await api.get<ApiResponse<ChallengeInvite[]>>("/api/invites");
     return response.data;
   },
 
   // POST /api/challenge/:id/invite/accept
   acceptInvite: async (challengeId: string) => {
-    const response = await api.post<ApiResponse<any>>(
+    const response = await api.post<ApiResponse<ChallengeInvite>>(
       `/api/challenge/${challengeId}/invite/accept`
     );
     return response.data;
@@ -226,7 +227,7 @@ export const inviteApi = {
 
   // POST /api/challenge/:id/invite/reject
   rejectInvite: async (challengeId: string) => {
-    const response = await api.post<ApiResponse<any>>(
+    const response = await api.post<ApiResponse<ChallengeInvite>>(
       `/api/challenge/${challengeId}/invite/reject`
     );
     return response.data;
@@ -238,7 +239,7 @@ export const inviteApi = {
 // ============================================================================
 export const userApi = {
   searchUsers: async (query: string) => {
-    const response = await api.get<ApiResponse<any[]>>("/api/users/search", {
+    const response = await api.get<ApiResponse<UserSearchResult[]>>("/api/users/search", {
       params: { q: query },
     });
     return response.data;
