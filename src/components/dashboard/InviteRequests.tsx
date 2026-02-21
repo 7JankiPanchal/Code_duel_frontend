@@ -42,7 +42,10 @@ const InviteRequests: React.FC = () => {
   ) => {
     setRespondingId(invite.id);
     try {
-      const response = await inviteApi.respondToInvite(invite.id, action);
+      const response =
+        action === "accepted"
+          ? await inviteApi.acceptInvite(invite.challengeId)
+          : await inviteApi.rejectInvite(invite.challengeId);
       if (response.success) {
         // Remove the invite from the list regardless of action
         setInvites((prev) => prev.filter((inv) => inv.id !== invite.id));

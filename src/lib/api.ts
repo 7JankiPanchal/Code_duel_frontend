@@ -202,9 +202,10 @@ export const challengeApi = {
 // INVITE APIs
 // ============================================================================
 export const inviteApi = {
+  // POST /api/challenge/:id/invite
   sendInvite: async (challengeId: string, userId: string) => {
     const response = await api.post<ApiResponse<any>>(
-      `/api/challenges/${challengeId}/invites`,
+      `/api/challenge/${challengeId}/invite`,
       { userId }
     );
     return response.data;
@@ -215,10 +216,18 @@ export const inviteApi = {
     return response.data;
   },
 
-  respondToInvite: async (inviteId: string, action: "accepted" | "rejected") => {
-    const response = await api.patch<ApiResponse<any>>(
-      `/api/invites/${inviteId}`,
-      { action }
+  // POST /api/challenge/:id/invite/accept
+  acceptInvite: async (challengeId: string) => {
+    const response = await api.post<ApiResponse<any>>(
+      `/api/challenge/${challengeId}/invite/accept`
+    );
+    return response.data;
+  },
+
+  // POST /api/challenge/:id/invite/reject
+  rejectInvite: async (challengeId: string) => {
+    const response = await api.post<ApiResponse<any>>(
+      `/api/challenge/${challengeId}/invite/reject`
     );
     return response.data;
   },
