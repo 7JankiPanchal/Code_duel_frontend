@@ -19,9 +19,9 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
-import { authApi, leetcodeApi, LeetCodeProfile } from "@/lib/api";
+import { authApi, leetcodeApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { User } from "@/types";
+import { User, LeetCodeProfile } from "@/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Profile: React.FC = () => {

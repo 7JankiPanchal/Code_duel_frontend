@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from "axios";
-import { User } from "@/types";
+import { User, LeetCodeProfile, ActivityData, ChartData, LeaderboardEntry, Challenge } from "@/types";
 
 // API Base URL - Change this to your backend URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -121,13 +121,7 @@ export interface SessionStatus {
   expiresAt: string;
 }
 
-export interface LeetCodeProfile {
-  username: string;
-  streak: number;
-  totalActiveDays: number;
-  activeYears: number[];
-  submissionCalendar: string | Record<string, number>;
-}
+// moved to src/types/index.ts
 
 // ============================================================================
 // AUTH APIs
@@ -211,7 +205,7 @@ export const challengeApi = {
   },
 
   join: async (id: string) => {
-    const response = await api.post<ApiResponse<unknown>>(
+    const response = await api.post<ApiResponse<null>>(
       `/api/challenges/${id}/join`
     );
     return response.data;
@@ -247,21 +241,22 @@ export const dashboardApi = {
   },
 
   getChallengeProgress: async (challengeId: string) => {
-    const response = await api.get<ApiResponse<unknown>>(
+    // backend returns a simple object with progress percentages for users
+    const response = await api.get<ApiResponse<Record<string, unknown>>>(
       `/api/dashboard/challenge/${challengeId}`
     );
     return response.data;
   },
 
   getChallengeLeaderboard: async (challengeId: string) => {
-    const response = await api.get<ApiResponse<unknown>>(
+    const response = await api.get<ApiResponse<LeaderboardEntry[]>>(
       `/api/dashboard/challenge/${challengeId}/leaderboard`
     );
     return response.data;
   },
 
   getActivityHeatmap: async () => {
-    const response = await api.get<ApiResponse<unknown>>(
+    const response = await api.get<ApiResponse<ActivityData[]>>(
       "/api/dashboard/activity-heatmap"
     );
     return response.data;
@@ -273,7 +268,7 @@ export const dashboardApi = {
   },
 
   getSubmissionChart: async () => {
-    const response = await api.get<ApiResponse<unknown>>(
+    const response = await api.get<ApiResponse<ChartData[]>>(
       "/api/dashboard/submission-chart"
     );
     return response.data;
@@ -303,7 +298,7 @@ export const leetcodeApi = {
   },
 
   invalidateSession: async () => {
-    const response = await api.delete<ApiResponse<unknown>>(
+    const response = await api.delete<ApiResponse<null>>(
       "/api/leetcode/session"
     );
     return response.data;
@@ -317,14 +312,18 @@ export const leetcodeApi = {
   },
 
   testConnection: async (username: string) => {
-    const response = await api.get<ApiResponse<unknown>>(
+    interface TestResponse {
+      submissions?: unknown[];
+      message?: string;
+    }
+    const response = await api.get<ApiResponse<TestResponse>>(
       `/api/leetcode/test/${username}`
     );
     return response.data;
   },
 
   getProblemMetadata: async (titleSlug: string) => {
-    const response = await api.get<ApiResponse<unknown>>(
+    const response = await api.get<ApiResponse<Record<string, unknown>>>(
       `/api/leetcode/problem/${titleSlug}`
     );
     return response.data;

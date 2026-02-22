@@ -8,8 +8,10 @@ export interface User {
   avatar?: string;
   leetcodeUsername: string;
   createdAt?: string;
-  memberships?: unknown[];
-  ownedChallenges?: unknown[];
+  // user may belong to multiple challenges; store full member records
+  memberships?: ChallengeMember[];
+  // challenges created/owned by this user
+  ownedChallenges?: Challenge[];
 }
 
 export interface Challenge {
@@ -84,3 +86,13 @@ export type RawData = {
   target?: number;
   dailyTarget?: number;
 };
+
+// LeetCode profile returned from the backend
+export interface LeetCodeProfile {
+  username: string;
+  streak: number;
+  totalActiveDays: number;
+  activeYears: number[];
+  // the calendar may come as a JSON string or object mapping dates to counts
+  submissionCalendar: string | Record<string, number>;
+}

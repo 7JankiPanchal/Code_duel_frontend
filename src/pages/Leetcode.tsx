@@ -1,7 +1,8 @@
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
-import { authApi, leetcodeApi, LeetCodeProfile } from "@/lib/api";
+import { authApi, leetcodeApi } from "@/lib/api";
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { User, LeetCodeProfile } from "@/types";
 import ActivityHeatmap from "@/components/dashboard/ActivityHeatmap";
 import EmptyState from "@/components/common/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -14,8 +15,18 @@ const Leetcode = () => {
   const { user } = useAuth();
   const [leetcodeProfile, setLeetcodeProfile] = useState<LeetCodeProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [userProfile, setUserProfile] = useState<unknown>(null);
-  const [recentSubmissions, setRecentSubmissions] = useState<unknown[]>([]);
+  const [userProfile, setUserProfile] = useState<User | null>(null);
+
+  interface LeetCodeSubmission {
+    id: string | number;
+    title: string;
+    titleSlug: string;
+    lang: string;
+    timestamp: number;
+    status?: string;
+    statusDisplay?: string;
+  }
+  const [recentSubmissions, setRecentSubmissions] = useState<LeetCodeSubmission[]>([]);
   const navigate = useNavigate();
 
   const loadProfile = useCallback(async () => {
@@ -34,24 +45,23 @@ const Leetcode = () => {
           if (leetcodeResponse.success) {
             setLeetcodeProfile(leetcodeResponse.data);
           }
-        } catch (err) {
+        } catch (err: unknown) {
           console.error("Failed to load Leetcode profile", err);
         }
         // Also fetch recent submissions (use test endpoint which returns a small sample)
         try {
           const testResp = await leetcodeApi.testConnection(user.leetcodeUsername);
           console.log("Test response for recent submissions:", testResp);
-          if (testResp.success && testResp.data) {
-            const data = testResp.data as Record<string, unknown>;
-            if (data.submissions) {
-              setRecentSubmissions(data.submissions as unknown[]);
-            }
+          if (testResp.success && testResp.data && testResp.data.submissions) {
+            setRecentSubmissions(
+              testResp.data.submissions as LeetCodeSubmission[]
+            );
           }
-        } catch (err) {
+        } catch (err: unknown) {
           console.debug("Failed to fetch recent submissions", err);
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to load Leetcode profile", err);
     } finally {
       setIsLoading(false);
@@ -153,10 +163,8 @@ const Leetcode = () => {
                   <div className="mt-4 text-sm text-muted-foreground">No recent submissions available.</div>
                 ) : (
                   <ul className="mt-4 space-y-3">
-                    {recentSubmissions.map((submission) => {
-                      const s = submission as Record<string, unknown>;
-                      return (
-                        <li key={String(s.id)} className="flex items-center justify-between">
+                    {recentSubmissions.map((s) => (
+                      <li key={String(s.id)} className="flex items-center justify-between">
                           <div>
                             <a
                               href={`https://leetcode.com/problems/${s.titleSlug}/`}
@@ -164,16 +172,15 @@ const Leetcode = () => {
                               rel="noreferrer"
                               className="font-medium hover:underline"
                             >
-                              {String(s.title)}
+                              {s.title}
                             </a>
                             <div className="text-xs text-muted-foreground">
-                              {String(s.lang)} • {new Date(Number(s.timestamp) * 1000).toLocaleString()}
+                              {s.lang} • {new Date(s.timestamp * 1000).toLocaleString()}
                             </div>
                           </div>
-                          <div className="text-sm text-muted-foreground">{String(s.statusDisplay || s.status)}</div>
+                          <div className="text-sm text-muted-foreground">{s.statusDisplay || s.status}</div>
                         </li>
-                      );
-                    })}
+                    ))}
                   </ul>
                 )}
               </div>
@@ -187,7 +194,7 @@ const Leetcode = () => {
 
 export default Leetcode;
 
-function formatSubmissionCalendar(calendar: unknown) {
+function formatSubmissionCalendar(calendar: string | Record<string, number> | unknown) {
   if (!calendar) return [];
 
   // The backend returns an object mapping dateStr -> count (or nested structure)

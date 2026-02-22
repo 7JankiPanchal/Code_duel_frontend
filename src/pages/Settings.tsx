@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Settings as SettingsIcon,
   Key,
@@ -41,11 +41,7 @@ const Settings: React.FC = () => {
     user?.leetcodeUsername || ""
   );
 
-  useEffect(() => {
-    checkSessionStatus();
-  }, []);
-
-  const checkSessionStatus = async () => {
+  const checkSessionStatus = useCallback(async () => {
     try {
       const response = await leetcodeApi.getSessionStatus();
       if (response.success) {
@@ -54,9 +50,14 @@ const Settings: React.FC = () => {
     } catch (error) {
       console.error("Failed to check session status:", error);
     }
-  };
+  }, []);
 
-  const handleSaveLeetCodeSession = async () => {
+  useEffect(() => {
+    checkSessionStatus();
+  }, [checkSessionStatus]);
+
+
+  const handleSaveLeetCodeSession = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await leetcodeApi.storeSession(
@@ -82,9 +83,9 @@ const Settings: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [leetcodeSession, toast, checkSessionStatus]);
 
-  const handleInvalidateSession = async () => {
+  const handleInvalidateSession = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await leetcodeApi.invalidateSession();
@@ -104,9 +105,9 @@ const Settings: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
-  const handleUpdateProfile = async () => {
+  const handleUpdateProfile = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await authApi.updateProfile({ leetcodeUsername });
@@ -128,7 +129,7 @@ const Settings: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [leetcodeUsername, toast, updateUser, user]);
 
   return (
     <Layout>

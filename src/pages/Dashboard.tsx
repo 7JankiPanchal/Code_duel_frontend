@@ -10,9 +10,9 @@ import ActivityHeatmap from "@/components/dashboard/ActivityHeatmap";
 import ChallengeCard from "@/components/dashboard/ChallengeCard";
 import EmptyState from "@/components/common/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
-import { dashboardApi, challengeApi, ChallengeResponse, TodayStatusResponse, DashboardResponse, ApiResponse, DashboardStats } from "@/lib/api";
+import { dashboardApi, challengeApi, TodayStatusResponse, DashboardResponse, ApiResponse, DashboardStats } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { Stats, ActivityData, ChartData } from "@/types";
+import { Stats, ActivityData, ChartData, Challenge } from "@/types";
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -28,7 +28,7 @@ const Dashboard: React.FC = () => {
     activeChallenges: 0,
     totalSolved: 0,
   });
-  const [challenges, setChallenges] = useState<ChallengeResponse[]>([]);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [activityData, setActivityData] = useState<ActivityData[]>([]);
   const [chartData, setChartData] = useState<ChartData[]>([]);
 
@@ -85,7 +85,8 @@ const Dashboard: React.FC = () => {
 
       // Update challenges list
       if (challengesResponse.success && challengesResponse.data) {
-        setChallenges(challengesResponse.data);
+        // the backend shape is largely compatible with our Challenge type
+        setChallenges(challengesResponse.data as Challenge[]);
       }
     } catch (error: unknown) {
       console.error("Failed to load dashboard:", error);
@@ -191,8 +192,8 @@ const Dashboard: React.FC = () => {
 
           {challenges.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {challenges.slice(0, 3).map((challenge: any) => (
-                <ChallengeCard key={challenge.id} challenge={challenge as any} />
+              {challenges.slice(0, 3).map((challenge) => (
+                <ChallengeCard key={challenge.id} challenge={challenge} />
               ))}
             </div>
           ) : (
