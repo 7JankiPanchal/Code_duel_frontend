@@ -26,7 +26,7 @@ const queryClient = new QueryClient();
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { isAuthenticated ,isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) {
     return null;
   }
@@ -40,7 +40,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
 
 // Auth Route wrapper (redirect if already logged in)
 const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated , isLoading} = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) {
     return null;
   }
@@ -148,7 +148,7 @@ const App = () => (
       <AuthProvider>
         <TooltipProvider>
           <Toaster />
-          <Sonner />
+          <Sonner position="top-center" duration={2000} />
           <BrowserRouter
             future={{
               v7_startTransition: true,
