@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Code2,
@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Settings,
   Code,
+  Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,6 +22,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetClose,
+} from "@/components/ui/sheet";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -28,11 +36,21 @@ const Navbar: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
+
+  const mobileNavLinks = [
+    { to: "/", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/leetcode", label: "Challenges", icon: Code },
+    { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
+    { to: "/create-challenge", label: "New Challenge", icon: Plus },
+    { to: "/profile", label: "Profile", icon: User },
+    { to: "/settings", label: "Settings", icon: Settings },
+  ];
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -79,6 +97,55 @@ const Navbar: React.FC = () => {
         )}
 
         <div className="flex items-center gap-2">
+          {/* Mobile hamburger menu — visible only below md breakpoint */}
+          {isAuthenticated && (
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 md:hidden"
+                onClick={() => setMobileOpen(true)}
+                aria-label="Open navigation menu"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <SheetContent side="left" className="w-72">
+                <SheetHeader className="pb-4 border-b border-border">
+                  <SheetTitle className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
+                      <Code2 className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                    Navigation
+                  </SheetTitle>
+                </SheetHeader>
+                <nav className="flex flex-col gap-1 pt-4">
+                  {mobileNavLinks.map(({ to, label, icon: Icon }) => (
+                    <SheetClose asChild key={to}>
+                      <Link
+                        to={to}
+                        className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                      >
+                        <Icon className="h-4 w-4" />
+                        {label}
+                      </Link>
+                    </SheetClose>
+                  ))}
+                  <div className="my-2 border-t border-border" />
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false);
+                      handleLogout();
+                    }}
+                    className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Log out
+                  </button>
+                </nav>
+              </SheetContent>
+            </Sheet>
+          )}
+
           <Button
             variant="ghost"
             size="icon"
@@ -115,25 +182,6 @@ const Navbar: React.FC = () => {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="md:hidden">
-                  <Link to="/" className="gap-2 cursor-pointer">
-                    <LayoutDashboard className="h-4 w-4" />
-                    Dashboard
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="md:hidden">
-                  <Link to="/leaderboard" className="gap-2 cursor-pointer">
-                    <Trophy className="h-4 w-4" />
-                    Leaderboard
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="md:hidden">
-                  <Link to="/create-challenge" className="gap-2 cursor-pointer">
-                    <Plus className="h-4 w-4" />
-                    New Challenge
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="md:hidden" />
                 <DropdownMenuItem asChild>
                   <Link to="/settings" className="gap-2 cursor-pointer">
                     <Settings className="h-4 w-4" />

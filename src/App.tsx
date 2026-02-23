@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import CodeEditor from "./components/CodeEditor";
 
 // Pages
 import Index from "./pages/Index";
@@ -85,6 +86,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route path="/duel-editor" element={<CodeEditor />} />
       <Route
         path="/dashboard"
         element={
