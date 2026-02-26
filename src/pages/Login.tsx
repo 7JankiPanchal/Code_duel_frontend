@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { ValidatedInput } from '@/components/common/ValidatedInput';
+import { useDelayedNavigate } from '@/hooks/use-delayed-navigate';
 
 const isEmail = (value: string): boolean => /\S+@\S+\.\S+/.test(value);
 
@@ -19,6 +21,8 @@ const Login: React.FC = () => {
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [showErrors, setShowErrors] = useState(false);
+  const delayedNavigate = useDelayedNavigate();
 
   const validate = () => {
     const newErrors: { identifier?: string; password?: string } = {};
@@ -51,8 +55,9 @@ const Login: React.FC = () => {
       toast({
         title: 'Welcome back!',
         description: 'Successfully logged in.',
+        variant: 'success',
       });
-      navigate('/');
+      delayedNavigate('/');
     } catch {
       toast({
         title: 'Login failed',
@@ -102,25 +107,31 @@ const Login: React.FC = () => {
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
-                  <Input
+                  <ValidatedInput
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={errors.password ? 'border-destructive pr-10' : 'pr-10'}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (showErrors) {
+                        setErrors(prev => ({ ...prev, password: undefined }));
+                        if (!Object.values({ ...errors, password: undefined }).some(Boolean)) {
+                          setShowErrors(false);
+                        }
+                      }
+                    }}
+                    error={errors.password}
+                    showError={showErrors && !!errors.password}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {errors.password && (
-                  <p className="text-xs text-destructive">{errors.password}</p>
-                )}
               </div>
 
               <Button
