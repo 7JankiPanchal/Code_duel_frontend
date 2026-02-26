@@ -8,31 +8,34 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+const isEmail = (value: string): boolean => /\S+@\S+\.\S+/.test(value);
+
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  
+  const [errors, setErrors] = useState<{ identifier?: string; password?: string }>({});
+
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const validate = () => {
-    const newErrors: { email?: string; password?: string } = {};
-    
-    if (!email) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Please enter a valid email';
+    const newErrors: { identifier?: string; password?: string } = {};
+
+    if (!identifier.trim()) {
+      newErrors.identifier = 'Email or username is required';
+    } else if (identifier.includes('@') && !isEmail(identifier)) {
+      // Only enforce email format if the user has typed an '@' symbol
+      newErrors.identifier = 'Please enter a valid email address';
     }
-    
+
     if (!password) {
       newErrors.password = 'Password is required';
     } else if (password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -40,11 +43,11 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!validate()) return;
-    
+
     try {
-      await login(email, password);
+      await login(identifier.trim(), password);
       toast({
         title: 'Welcome back!',
         description: 'Successfully logged in.',
@@ -53,7 +56,7 @@ const Login: React.FC = () => {
     } catch {
       toast({
         title: 'Login failed',
-        description: 'Please check your credentials.',
+        description: 'Invalid email/username or password. Please try again.',
         variant: 'destructive',
       });
     }
@@ -81,17 +84,18 @@ const Login: React.FC = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="identifier">Email or Username</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={errors.email ? 'border-destructive' : ''}
+                  id="identifier"
+                  type="text"
+                  placeholder="you@example.com or your_username"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  autoComplete="username"
+                  className={errors.identifier ? 'border-destructive' : ''}
                 />
-                {errors.email && (
-                  <p className="text-xs text-destructive">{errors.email}</p>
+                {errors.identifier && (
+                  <p className="text-xs text-destructive">{errors.identifier}</p>
                 )}
               </div>
 
@@ -119,7 +123,11 @@ const Login: React.FC = () => {
                 )}
               </div>
 
-              <Button type="submit" className="w-full gradient-primary" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full gradient-primary"
+                disabled={isLoading}
+              >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
