@@ -7,6 +7,7 @@ import type {
   ChartData,
   ChallengeInvite,
   UserSearchResult,
+  LeaderboardEntry,
 } from "@/types";
 
 // API Base URL - Change this to your backend URL
@@ -68,8 +69,11 @@ export interface LoginResponse {
   token: string;
 }
 
-export interface RegisterResponse extends LoginResponse { }
+// RegisterResponse is intentionally identical to LoginResponse but kept as a separate type
+// for potential future extensions specific to registration
+export interface RegisterResponse extends LoginResponse {}
 
+export interface DashboardResponse {
   summary: {
     totalChallenges: number;
     activeChallenges: number;
@@ -77,12 +81,12 @@ export interface RegisterResponse extends LoginResponse { }
     totalPenalties: number;
   };
   activeChallenges: Challenge[];
-  recentActivity: any[];
+  recentActivity: Record<string, unknown>[];
 }
 
 export interface TodayStatusResponse {
   date: string;
-  challenges: any[];
+  challenges: Challenge[];
   summary: {
     totalChallenges: number;
     completed: number;
@@ -125,12 +129,12 @@ export const authApi = {
   },
 
   getProfile: async () => {
-    const response = await api.get<ApiResponse<any>>("/api/auth/profile");
+    const response = await api.get<ApiResponse<User>>("/api/auth/profile");
     return response.data;
   },
 
   updateProfile: async (data: { leetcodeUsername?: string }) => {
-    const response = await api.put<ApiResponse<any>>("/api/auth/profile", data);
+    const response = await api.put<ApiResponse<User>>("/api/auth/profile", data);
     return response.data;
   },
 };
@@ -173,7 +177,7 @@ export const challengeApi = {
   },
 
   join: async (id: string) => {
-    const response = await api.post<ApiResponse<any>>(
+    const response = await api.post<ApiResponse<Challenge>>(
       `/api/challenges/${id}/join`
     );
     return response.data;
@@ -263,40 +267,40 @@ export const dashboardApi = {
   },
 
   getChallengeProgress: async (challengeId: string) => {
-    const response = await api.get<ApiResponse<any>>(
+    const response = await api.get<ApiResponse<Record<string, unknown>>>(
       `/api/dashboard/challenge/${challengeId}`
     );
     return response.data;
   },
 
   getChallengeLeaderboard: async (challengeId: string) => {
-    const response = await api.get<ApiResponse<any>>(
+    const response = await api.get<ApiResponse<LeaderboardEntry[]>>(
       `/api/dashboard/challenge/${challengeId}/leaderboard`
     );
     return response.data;
   },
 
   getActivityHeatmap: async () => {
-    const response = await api.get<ApiResponse<any>>(
+    const response = await api.get<ApiResponse<ActivityData[]>>(
       "/api/dashboard/activity-heatmap"
     );
     return response.data;
   },
 
   getStats: async () => {
-    const response = await api.get<ApiResponse<any>>("/api/dashboard/stats");
+    const response = await api.get<ApiResponse<Stats>>("/api/dashboard/stats");
     return response.data;
   },
 
   getSubmissionChart: async () => {
-    const response = await api.get<ApiResponse<any>>(
+    const response = await api.get<ApiResponse<ChartData[]>>(
       "/api/dashboard/submission-chart"
     );
     return response.data;
   },
 
   getGlobalLeaderboard: async () => {
-    const response = await api.get<ApiResponse<any[]>>(
+    const response = await api.get<ApiResponse<LeaderboardEntry[]>>(
       "/api/dashboard/leaderboard"
     );
     return response.data;
@@ -312,7 +316,7 @@ export const leetcodeApi = {
     csrfToken: string,
     expiresAt: string
   ) => {
-    const response = await api.post<ApiResponse<any>>("/api/leetcode/session", {
+    const response = await api.post<ApiResponse<Record<string, unknown>>>("/api/leetcode/session", {
       cookie,
       csrfToken,
       expiresAt,
@@ -321,33 +325,33 @@ export const leetcodeApi = {
   },
 
   getSessionStatus: async () => {
-    const response = await api.get<ApiResponse<any>>("/api/leetcode/session");
+    const response = await api.get<ApiResponse<Record<string, unknown>>>("/api/leetcode/session");
     return response.data;
   },
 
   invalidateSession: async () => {
-    const response = await api.delete<ApiResponse<any>>(
+    const response = await api.delete<ApiResponse<Record<string, unknown>>>(
       "/api/leetcode/session"
     );
     return response.data;
   },
 
   getProfile: async (username: string) => {
-    const response = await api.get<ApiResponse<any>>(
+    const response = await api.get<ApiResponse<User>>(
       `/api/leetcode/profile/${username}`
     );
     return response.data;
   },
 
   testConnection: async (username: string) => {
-    const response = await api.get<ApiResponse<any>>(
+    const response = await api.get<ApiResponse<Record<string, unknown>>>(
       `/api/leetcode/test/${username}`
     );
     return response.data;
   },
 
   getProblemMetadata: async (titleSlug: string) => {
-    const response = await api.get<ApiResponse<any>>(
+    const response = await api.get<ApiResponse<Record<string, unknown>>>(
       `/api/leetcode/problem/${titleSlug}`
     );
     return response.data;

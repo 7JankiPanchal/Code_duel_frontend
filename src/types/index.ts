@@ -81,3 +81,19 @@ export type RawData = {
   target?: number;
   dailyTarget?: number;
 };
+
+export interface ChallengeInvite {
+  id: string;
+  challengeId: string;
+  userId: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  createdAt: string;
+}
+
+export interface UserSearchResult {
+  id: string;
+  username: string;
+  email: string;
+  avatar?: string;
+  leetcodeUsername?: string;
+}
