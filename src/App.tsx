@@ -58,7 +58,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Public Landing Page / Dashboard */}
-      <Route path="/" element={isAuthenticated ? <Dashboard /> : <Index />} />
+      <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Index />} />
 
       {/* Auth Routes */}
       <Route
@@ -158,7 +158,7 @@ const App = () => (
       <AuthProvider>
         <TooltipProvider>
           <Toaster />
-          <Sonner />
+          <Sonner position="top-center" duration={2000} />
           <BrowserRouter
             future={{
               v7_startTransition: true,
