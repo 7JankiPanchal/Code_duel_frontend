@@ -1,13 +1,20 @@
 import { useState, useEffect } from "react";
 import Editor from "@monaco-editor/react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 export default function CodeEditor() {
   const [code, setCode] = useState<string>("// Start coding here...");
   const [language, setLanguage] = useState<string>("javascript");
-<<<<<<< HEAD
+
   const [theme, setTheme] = useState<string>("vs-dark"); // theme toggle
-=======
->>>>>>> 9765bc712bb91be9f4c63f32406572739cdae632
+
+
 
   // 🔹 Run Code
   const handleRunCode = () => {
@@ -33,7 +40,7 @@ export default function CodeEditor() {
     return () => window.removeEventListener("keydown", preventSave);
   }, []);
 
-<<<<<<< HEAD
+
   // 🔹 Auto-save every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -43,59 +50,63 @@ export default function CodeEditor() {
     return () => clearInterval(interval);
   }, [code]);
 
-=======
->>>>>>> 9765bc712bb91be9f4c63f32406572739cdae632
+
+
   // 🔹 Monaco Shortcuts
   const handleEditorDidMount = (editor: any, monaco: any) => {
     // Ctrl + Enter → Run
     editor.addCommand(
       monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
-<<<<<<< HEAD
+
       () => handleRunCode()
-=======
+
       () => {
         handleRunCode();
       }
->>>>>>> 9765bc712bb91be9f4c63f32406572739cdae632
+
     );
 
     // Ctrl + S → Save
     editor.addCommand(
       monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
-<<<<<<< HEAD
+
       () => handleSaveCode()
-=======
+
       () => {
         handleSaveCode();
       }
->>>>>>> 9765bc712bb91be9f4c63f32406572739cdae632
+
     );
 
     // Ctrl + Shift + F → Format
     editor.addCommand(
       monaco.KeyMod.CtrlCmd |
+
         monaco.KeyMod.Shift |
         monaco.KeyCode.KeyF,
-<<<<<<< HEAD
+
       () => editor.getAction("editor.action.formatDocument").run()
-=======
+
+      monaco.KeyMod.Shift |
+      monaco.KeyCode.KeyF,
+
       () => {
         editor.getAction("editor.action.formatDocument").run();
       }
->>>>>>> 9765bc712bb91be9f4c63f32406572739cdae632
+
     );
   };
 
   return (
     <div style={{ padding: "20px" }}>
-      <h2>Live Code Duel</h2>
+      <h2 className="text-2xl font-bold mb-4">Live Code Duel</h2>
 
       {/* 🔹 Shortcut Info */}
       <div style={{ fontSize: "14px", color: "gray", marginBottom: "8px" }}>
         Shortcuts: Ctrl+Enter (Run) | Ctrl+S (Save) | Ctrl+Shift+F (Format)
       </div>
 
-<<<<<<< HEAD
+
       {/* 🔹 Controls: Reset + Theme */}
       <div style={{ marginBottom: "10px" }}>
         <button
@@ -112,8 +123,7 @@ export default function CodeEditor() {
       </div>
 
       {/* 🔹 Language Selector */}
-=======
->>>>>>> 9765bc712bb91be9f4c63f32406572739cdae632
+
       <select
         value={language}
         onChange={(e) => setLanguage(e.target.value)}
@@ -124,20 +134,32 @@ export default function CodeEditor() {
         <option value="cpp">C++</option>
       </select>
 
-<<<<<<< HEAD
-      {/* 🔹 Monaco Editor */}
-=======
->>>>>>> 9765bc712bb91be9f4c63f32406572739cdae632
+      <div className="w-[180px] mb-4">
+        <Select value={language} onValueChange={setLanguage}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select Language" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="javascript">JavaScript</SelectItem>
+            <SelectItem value="typescript">TypeScript</SelectItem>
+            <SelectItem value="python">Python</SelectItem>
+            <SelectItem value="cpp">C++</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+
+
       <div style={{ marginTop: "10px" }}>
         <Editor
           height="500px"
           language={language}
           value={code}
-<<<<<<< HEAD
+
           theme={theme}
-=======
+
           theme="vs-dark"
->>>>>>> 9765bc712bb91be9f4c63f32406572739cdae632
+
           onChange={(value) => setCode(value || "")}
           onMount={handleEditorDidMount}
         />
