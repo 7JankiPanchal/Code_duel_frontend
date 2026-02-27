@@ -19,6 +19,7 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Leetcode from "./pages/Leetcode";
+import StreakTest from "./pages/StreakTest";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,9 @@ const AppRoutes = () => {
     <Routes>
       {/* Public Landing Page / Dashboard */}
       <Route path="/" element={isAuthenticated ? <Dashboard /> : <Index />} />
+
+      {/* Streak Test Page (Public for easy testing) */}
+      <Route path="/streak-test" element={<StreakTest />} />
 
       {/* Auth Routes */}
       <Route
