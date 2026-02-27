@@ -1,14 +1,21 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { authApi } from "@/lib/api";
 
 interface User {
   id: string;
   name: string;
   email: string;
+  username?: string;
+  avatar?: string;
+  leetcodeUsername?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (userData: User) => void;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (emailOrUsername: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string, leetcodeUsername: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -16,10 +23,41 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
+  const isAuthenticated = !!user;
 
-  const login = (userData: User) => {
-    setUser(userData);
+  useEffect(() => {
+    // Check for existing session on mount
+    const storedUser = localStorage.getItem("user");
+    const token = localStorage.getItem("auth_token");
+
+    if (storedUser && token) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        localStorage.removeItem("user");
+        localStorage.removeItem("auth_token");
+      }
+    }
+    setIsLoading(false);
+  }, []);
+
+  const login = async (emailOrUsername: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const response = await authApi.login(emailOrUsername, password);
+
+      if (response.success && response.data) {
+        const { user: userData, token } = response.data;
+
+        const mappedUser: User = {
+          id: userData.id,
+          name: userData.username,
+          email: userData.email,
+          leetcodeUsername: userData.leetcodeUsername,
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.username}`,
+        };
 
         localStorage.setItem("auth_token", token);
         localStorage.setItem("user", JSON.stringify(mappedUser));
@@ -27,15 +65,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         throw new Error(response.message || "Login failed");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Allow mock login in development if backend is not found
-      if (error.message === "Network Error") {
+      const err = error as { message?: string };
+      if (err.message === "Network Error") {
         console.warn("Backend not found. Using mock login for UI preview.");
         const mockUser: User = {
           id: 'mock-id',
-          name: emailOrUsername.split('@')[0],
+          name: emailOrUsername.split('@')[0] || emailOrUsername,
           email: emailOrUsername.includes('@') ? emailOrUsername : `${emailOrUsername}@example.com`,
-          leetcodeUsername: emailOrUsername.split('@')[0],
+          leetcodeUsername: emailOrUsername.split('@')[0] || emailOrUsername,
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${emailOrUsername}`,
         };
         localStorage.setItem("auth_token", "mock-token");
@@ -43,7 +82,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(mockUser);
         return;
       }
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || "Login failed";
+      const errMsg = error as { response?: { data?: { message?: string; error?: string } } };
+      const errorMessage = errMsg.response?.data?.message || errMsg.response?.data?.error || (error as Error).message || "Login failed";
       throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -58,17 +98,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   ) => {
     setIsLoading(true);
     try {
-      const response = await authApi.register(
-        email,
-        username,
-        password,
-        leetcodeUsername
-      );
+      const response = await authApi.register(email, username, password, leetcodeUsername);
 
       if (response.success && response.data) {
         const { user: userData, token } = response.data;
 
-        // Map backend user to frontend User type
         const mappedUser: User = {
           id: userData.id,
           name: userData.username,
@@ -83,9 +117,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         throw new Error(response.message || "Registration failed");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Allow mock registration in development if backend is not found
-      if (error.message === "Network Error") {
+      const err = error as { message?: string };
+      if (err.message === "Network Error") {
         console.warn("Backend not found. Using mock registration for UI preview.");
         const mockUser: User = {
           id: 'mock-id',
@@ -99,20 +134,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(mockUser);
         return;
       }
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || "Registration failed";
+      const errMsg = error as { response?: { data?: { message?: string; error?: string } } };
+      const errorMessage = errMsg.response?.data?.message || errMsg.response?.data?.error || (error as Error).message || "Registration failed";
       throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
     }
-
   };
 
   const logout = () => {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user");
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
