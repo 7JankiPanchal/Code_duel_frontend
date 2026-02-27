@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ErrorMessage } from "@/components/ui/error-message";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -177,10 +178,8 @@ const CreateChallenge: React.FC = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className={errors.name ? "border-destructive" : ""}
-                  />
-                {errors.name && (
-                  <p className="text-xs text-destructive">{errors.name}</p>
-                )}
+                />
+                <ErrorMessage message={errors.name} />
               </div>
 
               <div className="space-y-2">
@@ -330,7 +329,11 @@ const CreateChallenge: React.FC = () => {
                 <Button
                   type="submit"
                   className="flex-1 gradient-primary"
-                  disabled={isLoading}
+                  disabled={
+                    isLoading ||
+                    Object.keys(errors).length > 0 ||
+                    !name || !dailyTarget || !penaltyAmount || !startDate || !endDate
+                  }
                 >
                   {isLoading ? (
                     <>
