@@ -56,7 +56,7 @@ const AppRoutes = () => {
 
   return (
     <>
-      {isAuthenticated && <Navbar />}
+      
       <Routes>
         {/* Public Landing Page / Dashboard */}
         <Route path="/" element={isAuthenticated ? <Dashboard /> : <Index />} />

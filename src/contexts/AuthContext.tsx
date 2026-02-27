@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types';
-import { authApi } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -24,80 +23,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadUser = async () => {
-      const token = localStorage.getItem('auth_token');
-      const savedUser = localStorage.getItem('user');
-
-      if (token && savedUser) {
-        try {
-          setUser(JSON.parse(savedUser));
-        } catch {
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('user');
-        }
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch {
+        localStorage.removeItem('user');
       }
-      setIsLoading(false);
-    };
-    loadUser();
+    }
+    setIsLoading(false);
   }, []);
 
+  // ✅ MOCK LOGIN (no backend)
   const login = async (emailOrUsername: string, password: string) => {
     setIsLoading(true);
+
     try {
-      const response = await authApi.login(emailOrUsername, password);
+      // accept anything
+      const mockUser: User = {
+        id: "1",
+        name: emailOrUsername,
+        email: emailOrUsername.includes("@") ? emailOrUsername : `${emailOrUsername}@demo.com`,
+        leetcodeUsername: emailOrUsername,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${emailOrUsername}`,
+      };
 
-      if (response.success && response.data) {
-        const { user: userData, token } = response.data;
+      localStorage.setItem('auth_token', 'mock_token_123');
+      localStorage.setItem('user', JSON.stringify(mockUser));
+      setUser(mockUser);
 
-        const mappedUser: User = {
-          id: userData.id,
-          name: userData.username,
-          email: userData.email,
-          leetcodeUsername: userData.leetcodeUsername,
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.username}`,
-        };
-
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('user', JSON.stringify(mappedUser));
-        setUser(mappedUser);
-
-        return { success: true };
-      } else {
-        return { success: false, message: response.message || 'Login failed' };
-      }
-    } catch (err: any) {
-      return { success: false, message: err.message || 'Login failed' };
+      return { success: true };
+    } catch {
+      return { success: false, message: 'Login failed' };
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (username: string, email: string, password: string, leetcodeUsername: string) => {
+  // ✅ MOCK REGISTER
+  const register = async (
+    username: string,
+    email: string,
+    password: string,
+    leetcodeUsername: string
+  ) => {
     setIsLoading(true);
+
     try {
-      const response = await authApi.register(email, username, password, leetcodeUsername);
+      const mockUser: User = {
+        id: "1",
+        name: username,
+        email,
+        leetcodeUsername,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+      };
 
-      if (response.success && response.data) {
-        const { user: userData, token } = response.data;
+      localStorage.setItem('auth_token', 'mock_token_123');
+      localStorage.setItem('user', JSON.stringify(mockUser));
+      setUser(mockUser);
 
-        const mappedUser: User = {
-          id: userData.id,
-          name: userData.username,
-          email: userData.email,
-          leetcodeUsername: userData.leetcodeUsername,
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.username}`,
-        };
-
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('user', JSON.stringify(mappedUser));
-        setUser(mappedUser);
-
-        return { success: true };
-      } else {
-        return { success: false, message: response.message || 'Registration failed' };
-      }
-    } catch (err: any) {
-      return { success: false, message: err.message || 'Registration failed' };
+      return { success: true };
+    } catch {
+      return { success: false, message: 'Registration failed' };
     } finally {
       setIsLoading(false);
     }

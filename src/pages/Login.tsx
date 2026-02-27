@@ -37,9 +37,8 @@ const Login: React.FC = () => {
     const result = await login(email, password);
 
     if (result.success) {
-      toast({ title: 'Welcome back!', description: 'Successfully logged in.' });
-      navigate('/dashboard');
-    } else {
+  toast({ title: 'Welcome back!', description: 'Successfully logged in.' });
+}else {
       toast({ title: 'Login failed', description: result.message, variant: 'destructive' });
     }
   };

@@ -12,6 +12,7 @@ import {
   Settings,
   Code,
   Menu,
+  Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,16 +32,20 @@ import {
 } from "@/components/ui/sheet";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 const Navbar: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout, isAuthenticated } = useAuth();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } =
+    useNotifications();
+
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
-    navigate("/login"); // Redirect after logout
+    navigate("/login");
   };
 
   const mobileNavLinks = [
@@ -53,18 +58,22 @@ const Navbar: React.FC = () => {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
+        {/* Logo */}
         <Link
           to="/"
-          className="flex items-center gap-2 font-semibold transition-colors hover:text-primary"
+          className="flex items-center gap-2 font-semibold hover:text-primary"
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
             <Code2 className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="hidden text-lg sm:inline-block">LeetCode Tracker</span>
+          <span className="hidden text-lg sm:inline-block">
+            Code Duel
+          </span>
         </Link>
 
+        {/* Desktop Links */}
         {isAuthenticated && (
           <div className="hidden md:flex items-center gap-1">
             <Button variant="ghost" size="sm" asChild>
@@ -73,18 +82,21 @@ const Navbar: React.FC = () => {
                 Dashboard
               </Link>
             </Button>
+
             <Button variant="ghost" size="sm" asChild>
               <Link to="/leaderboard" className="gap-2">
                 <Trophy className="h-4 w-4" />
                 Leaderboard
               </Link>
             </Button>
+
             <Button variant="ghost" size="sm" asChild>
               <Link to="/leetcode" className="gap-2">
                 <Code className="h-4 w-4" />
                 LeetCode
               </Link>
             </Button>
+
             <Button variant="ghost" size="sm" asChild>
               <Link to="/create-challenge" className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -95,107 +107,122 @@ const Navbar: React.FC = () => {
         )}
 
         <div className="flex items-center gap-2">
-          {/* Mobile hamburger menu */}
+          {/* 🔔 Notifications */}
           {isAuthenticated && (
-            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 md:hidden"
-                onClick={() => setMobileOpen(true)}
-                aria-label="Open navigation menu"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              <SheetContent side="left" className="w-72">
-                <SheetHeader className="pb-4 border-b border-border">
-                  <SheetTitle className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
-                      <Code2 className="h-4 w-4 text-primary-foreground" />
-                    </div>
-                    Navigation
-                  </SheetTitle>
-                </SheetHeader>
-                <nav className="flex flex-col gap-1 pt-4">
-                  {mobileNavLinks.map(({ to, label, icon: Icon }) => (
-                    <SheetClose asChild key={to}>
-                      <Link
-                        to={to}
-                        onClick={() => setMobileOpen(false)}
-                        className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
-                      >
-                        <Icon className="h-4 w-4" />
-                        {label}
-                      </Link>
-                    </SheetClose>
-                  ))}
-                  <div className="my-2 border-t border-border" />
-                  <button
-                    onClick={() => {
-                      setMobileOpen(false);
-                      handleLogout();
-                    }}
-                    className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Log out
-                  </button>
-                </nav>
-              </SheetContent>
-            </Sheet>
-          )}
-
-          {/* Theme toggle */}
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9">
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
-
-          {/* Auth buttons / user avatar */}
-          {isAuthenticated && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Button variant="ghost" size="icon" className="relative h-9 w-9">
+                  <Bell className="h-4 w-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 text-xs bg-destructive text-white rounded-full px-1.5 py-0.5">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent
+                align="end"
+                className="w-80 max-h-96 overflow-y-auto"
+              >
+                <div className="flex items-center justify-between p-2">
+                  <p className="font-semibold text-sm">Notifications</p>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllAsRead}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
+
+                <DropdownMenuSeparator />
+
+                {notifications.length === 0 ? (
+                  <div className="p-4 text-sm text-muted-foreground text-center">
+                    No notifications
+                  </div>
+                ) : (
+                  notifications.map((notification) => (
+                    <DropdownMenuItem
+                      key={notification.id}
+                      onClick={() => markAsRead(notification.id)}
+                      className={`flex flex-col items-start gap-1 whitespace-normal cursor-pointer ${
+                        !notification.read ? "bg-accent/40" : ""
+                      }`}
+                    >
+                      <span className="text-sm">
+                        {notification.message}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(notification.createdAt).toLocaleString()}
+                      </span>
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Theme Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            className="h-9 w-9"
+          >
+            {theme === "dark" ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </Button>
+
+          {/* Avatar */}
+          {isAuthenticated && user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="relative h-9 w-9 rounded-full"
+                >
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>
+                      {user.name.charAt(0)}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <div className="flex items-center justify-start gap-2 p-2">
-                  <div className="flex flex-col space-y-1 leading-none">
-                    <p className="font-medium">{user.name}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
-                  </div>
+
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="p-2">
+                  <p className="font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.email}
+                  </p>
                 </div>
+
                 <DropdownMenuSeparator />
+
                 <DropdownMenuItem asChild>
-                  <Link to="/settings" className="gap-2 cursor-pointer">
-                    <Settings className="h-4 w-4" /> Settings
-                  </Link>
+                  <Link to="/settings">Settings</Link>
                 </DropdownMenuItem>
+
                 <DropdownMenuItem asChild>
-                  <Link to="/profile" className="gap-2 cursor-pointer">
-                    <User className="h-4 w-4" /> Profile
-                  </Link>
+                  <Link to="/profile">Profile</Link>
                 </DropdownMenuItem>
+
                 <DropdownMenuItem
                   onClick={handleLogout}
-                  className="gap-2 cursor-pointer text-destructive"
+                  className="text-destructive"
                 >
-                  <LogOut className="h-4 w-4" /> Log out
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/login">Login</Link>
-              </Button>
-              <Button size="sm" asChild className="gradient-primary">
-                <Link to="/register">Sign Up</Link>
-              </Button>
-            </div>
           )}
         </div>
       </div>
