@@ -1,3 +1,4 @@
+// src/components/layout/Navbar.tsx
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -11,25 +12,20 @@ import {
   LayoutDashboard,
   Settings,
   Code,
-  Menu,
   Bell,
+  ArrowLeft,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
+  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetClose,
-} from "@/components/ui/sheet";
+
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationContext";
@@ -37,25 +33,13 @@ import { useNotifications } from "@/contexts/NotificationContext";
 const Navbar: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout, isAuthenticated } = useAuth();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } =
-    useNotifications();
-
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const navigate = useNavigate();
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
-
-  const mobileNavLinks = [
-    { to: "/", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/leetcode", label: "Challenges", icon: Code },
-    { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-    { to: "/create-challenge", label: "New Challenge", icon: Plus },
-    { to: "/profile", label: "Profile", icon: User },
-    { to: "/settings", label: "Settings", icon: Settings },
-  ];
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur">
@@ -63,14 +47,12 @@ const Navbar: React.FC = () => {
         {/* Logo */}
         <Link
           to="/"
-          className="flex items-center gap-2 font-semibold hover:text-primary"
+          className="group flex items-center gap-2 font-semibold transition-all duration-200 ease-out hover:text-primary"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary transition-transform duration-200 group-hover:scale-105">
             <Code2 className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="hidden text-lg sm:inline-block">
-            Code Duel
-          </span>
+          <span className="hidden text-lg sm:inline-block">Code Duel</span>
         </Link>
 
         {/* Desktop Links */}
@@ -82,21 +64,18 @@ const Navbar: React.FC = () => {
                 Dashboard
               </Link>
             </Button>
-
             <Button variant="ghost" size="sm" asChild>
               <Link to="/leaderboard" className="gap-2">
                 <Trophy className="h-4 w-4" />
                 Leaderboard
               </Link>
             </Button>
-
             <Button variant="ghost" size="sm" asChild>
               <Link to="/leetcode" className="gap-2">
                 <Code className="h-4 w-4" />
                 LeetCode
               </Link>
             </Button>
-
             <Button variant="ghost" size="sm" asChild>
               <Link to="/create-challenge" className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -106,8 +85,9 @@ const Navbar: React.FC = () => {
           </div>
         )}
 
+        {/* Right-side */}
         <div className="flex items-center gap-2">
-          {/* 🔔 Notifications */}
+          {/* Notifications */}
           {isAuthenticated && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -121,10 +101,7 @@ const Navbar: React.FC = () => {
                 </Button>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent
-                align="end"
-                className="w-80 max-h-96 overflow-y-auto"
-              >
+              <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
                 <div className="flex items-center justify-between p-2">
                   <p className="font-semibold text-sm">Notifications</p>
                   {unreadCount > 0 && (
@@ -144,19 +121,17 @@ const Navbar: React.FC = () => {
                     No notifications
                   </div>
                 ) : (
-                  notifications.map((notification) => (
+                  notifications.map((n) => (
                     <DropdownMenuItem
-                      key={notification.id}
-                      onClick={() => markAsRead(notification.id)}
+                      key={n.id}
+                      onClick={() => markAsRead(n.id)}
                       className={`flex flex-col items-start gap-1 whitespace-normal cursor-pointer ${
-                        !notification.read ? "bg-accent/40" : ""
+                        !n.read ? "bg-accent/40" : ""
                       }`}
                     >
-                      <span className="text-sm">
-                        {notification.message}
-                      </span>
+                      <span className="text-sm">{n.message}</span>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(notification.createdAt).toLocaleString()}
+                        {new Date(n.createdAt).toLocaleString()}
                       </span>
                     </DropdownMenuItem>
                   ))
@@ -166,32 +141,18 @@ const Navbar: React.FC = () => {
           )}
 
           {/* Theme Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="h-9 w-9"
-          >
-            {theme === "dark" ? (
-              <Sun className="h-4 w-4" />
-            ) : (
-              <Moon className="h-4 w-4" />
-            )}
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9">
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
 
           {/* Avatar */}
           {isAuthenticated && user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="relative h-9 w-9 rounded-full"
-                >
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback>
-                      {user.name.charAt(0)}
-                    </AvatarFallback>
+                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -199,9 +160,7 @@ const Navbar: React.FC = () => {
               <DropdownMenuContent align="end" className="w-56">
                 <div className="p-2">
                   <p className="font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.email}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
 
                 <DropdownMenuSeparator />
@@ -214,10 +173,7 @@ const Navbar: React.FC = () => {
                   <Link to="/profile">Profile</Link>
                 </DropdownMenuItem>
 
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="text-destructive"
-                >
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                   <LogOut className="h-4 w-4 mr-2" />
                   Log out
                 </DropdownMenuItem>

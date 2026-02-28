@@ -1,10 +1,21 @@
+// src/main.tsx
+import React from "react";
 import { createRoot } from "react-dom/client";
+
 import App from "./App.tsx";
 import "./index.css";
+
+// Contexts
 import { NotificationProvider } from "./contexts/NotificationContext";
 
-createRoot(document.getElementById("root")!).render(
-  <NotificationProvider>
-    <App />
-  </NotificationProvider>
+// Create root and render
+const container = document.getElementById("root");
+if (!container) throw new Error("Root element not found");
+
+createRoot(container).render(
+  <React.StrictMode>
+    <NotificationProvider>
+      <App />
+    </NotificationProvider>
+  </React.StrictMode>
 );

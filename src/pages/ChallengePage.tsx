@@ -1,286 +1,189 @@
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { challengeApi } from "../lib/api";
+// src/pages/ChallengePage.tsx
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, Link, useSearchParams } from "react-router-dom";
+import { ArrowLeft, Loader2, PlayCircle, Users, UserPlus, Calendar, Clock } from "lucide-react";
 
-interface Challenge {
-  id: string;
-  name: string;
-  description: string;
-  minSubmissionsPerDay: number;
-  difficultyFilter: string[] | null;
-  uniqueProblemConstraint: boolean;
-  penaltyAmount: number;
-  startDate: string;
-  endDate: string;
-  status: string;
-  ownerId: string;
-  createdAt: string;
-}
+import Layout from "@/components/layout/Layout";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import InviteUserDialog from "@/components/challenge/InviteUserDialog";
+import { challengeApi, dashboardApi } from "@/lib/api";
+import { Challenge } from "@/types";
 
-export default function ChallengesPage() {
+const PAGE_SIZE = 6;
+
+const ChallengePage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // ===============================
+  // Challenges List
+  // ===============================
   const [challenges, setChallenges] = useState<Challenge[]>([]);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
-  const difficulty = searchParams.get("difficulty") || "";
-  const status = searchParams.get("status") || "";
-  const sort = searchParams.get("sort") || "newest";
-  const search = searchParams.get("search") || "";
+  // ===============================
+  // Challenge Details
+  // ===============================
+  const [challenge, setChallenge] = useState<Challenge | null>(null);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [isJoining, setIsJoining] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
 
-  const [searchInput, setSearchInput] = useState(search);
+  const observer = useRef<IntersectionObserver | null>(null);
 
-  const pageSize = 6;
+  // ===============================
+  // Load Challenges (infinite scroll)
+  // ===============================
+  const loadChallenges = async (pageNum = 1) => {
+    try {
+      setLoading(true);
+      const res = await challengeApi.getAll({ page: pageNum, limit: PAGE_SIZE });
+      const data = res?.data || [];
 
-  // ==============================
-  // Load Data
-  // ==============================
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const res = await challengeApi.getAll();
-        setChallenges(res.success && res.data ? res.data : []);
-      } catch (err) {
-        console.error(err);
-        setChallenges([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
-  }, []);
-
-  // ==============================
-  // Sync input when URL changes
-  // ==============================
-  useEffect(() => {
-    setSearchInput(search);
-  }, [search]);
-
-  // ==============================
-  // Debounced search
-  // ==============================
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const params = new URLSearchParams(searchParams);
-
-      if (searchInput) {
-        params.set("search", searchInput);
-      } else {
-        params.delete("search");
-      }
-
-      setSearchParams(params);
-      setPage(1);
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, [searchInput]);
-
-  // ==============================
-  // Difficulty rank helper
-  // ==============================
-  const getDifficultyRank = (c: Challenge) => {
-    const order = { Easy: 1, Medium: 2, Hard: 3 };
-    if (!c.difficultyFilter?.length) return 0;
-    return Math.max(
-      ...c.difficultyFilter.map(
-        (d) => order[d as keyof typeof order] || 0
-      )
-    );
+      setChallenges(prev => [...prev, ...data]);
+      setHasMore(data.length === PAGE_SIZE);
+      setTotalPages(Math.ceil(res.total || 1));
+    } catch (error) {
+      toast({ title: "Error loading challenges", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // ==============================
-  // Filter + Stable Sort
-  // ==============================
-  const processed = useMemo(() => {
-    let data = [...challenges];
-
-    if (difficulty) {
-      data = data.filter((c) =>
-        c.difficultyFilter?.includes(difficulty)
-      );
-    }
-
-    if (status) {
-      data = data.filter((c) => c.status === status);
-    }
-
-    if (search) {
-      data = data.filter((c) =>
-        c.name.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-
-    data.sort((a, b) => {
-      switch (sort) {
-        case "newest": {
-          const diff =
-            new Date(b.createdAt).getTime() -
-            new Date(a.createdAt).getTime();
-          if (diff !== 0) return diff;
-          return a.name.localeCompare(b.name);
-        }
-        case "oldest": {
-          const diff =
-            new Date(a.createdAt).getTime() -
-            new Date(b.createdAt).getTime();
-          if (diff !== 0) return diff;
-          return a.name.localeCompare(b.name);
-        }
-        case "difficulty": {
-          const diff = getDifficultyRank(a) - getDifficultyRank(b);
-          if (diff !== 0) return diff;
-          return a.name.localeCompare(b.name);
-        }
-        case "endDate": {
-          const diff =
-            new Date(a.endDate).getTime() -
-            new Date(b.endDate).getTime();
-          if (diff !== 0) return diff;
-          return a.name.localeCompare(b.name);
-        }
-        default:
-          return 0;
-      }
-    });
-
-    return data;
-  }, [challenges, difficulty, status, sort, search]);
-
-  // ==============================
-  // Pagination
-  // ==============================
-  const totalPages = Math.ceil(processed.length / pageSize);
-
   useEffect(() => {
-    if (page > totalPages) setPage(1);
-  }, [totalPages]);
+    loadChallenges(page);
+  }, [page]);
 
-  const paginated = processed.slice(
-    (page - 1) * pageSize,
-    page * pageSize
+  const lastChallengeRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+      observer.current = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && hasMore) {
+          setPage(prev => prev + 1);
+        }
+      });
+      if (node) observer.current.observe(node);
+    },
+    [loading, hasMore]
   );
 
-  // ==============================
-  // Update URL
-  // ==============================
-  const updateParam = (key: string, value: string) => {
-    const params = new URLSearchParams(searchParams);
+  // ===============================
+  // Load Challenge Details
+  // ===============================
+  const loadChallengeDetails = async (challengeId: string) => {
+    try {
+      const [challengeRes, leaderboardRes, progressRes] = await Promise.all([
+        challengeApi.getById(challengeId),
+        dashboardApi.getChallengeLeaderboard(challengeId),
+        dashboardApi.getChallengeProgress(challengeId),
+      ]);
 
-    if (value) params.set(key, value);
-    else params.delete(key);
-
-    setSearchParams(params);
-    setPage(1);
+      if (challengeRes?.success) setChallenge(challengeRes.data);
+      if (leaderboardRes?.success) setLeaderboard(leaderboardRes.data || []);
+      if (progressRes?.success) setChartData(progressRes.data || []);
+    } catch (error) {
+      toast({ title: "Failed to load challenge details", variant: "destructive" });
+    }
   };
 
-  const resetFilters = () => {
-    setSearchParams({});
-    setSearchInput("");
-    setPage(1);
+  useEffect(() => {
+    if (id) loadChallengeDetails(id);
+  }, [id]);
+
+  // ===============================
+  // Join / Activate Challenge
+  // ===============================
+  const handleJoinChallenge = async () => {
+    if (!id) return;
+    setIsJoining(true);
+    try {
+      const res = await challengeApi.join(id);
+      if (res?.success) toast({ title: "Joined challenge!" });
+      loadChallengeDetails(id);
+    } catch {
+      toast({ title: "Failed to join challenge", variant: "destructive" });
+    } finally {
+      setIsJoining(false);
+    }
   };
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  const handleActivateChallenge = async () => {
+    if (!id) return;
+    setIsActivating(true);
+    try {
+      const res = await challengeApi.updateStatus(id, "ACTIVE");
+      if (res?.success) toast({ title: "Challenge activated!" });
+      loadChallengeDetails(id);
+    } catch {
+      toast({ title: "Failed to activate challenge", variant: "destructive" });
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
+  if (id && !challenge) return <div className="p-6">Loading challenge...</div>;
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Challenges</h1>
-
-      <div className="flex flex-wrap gap-4">
-        <select
-          value={difficulty}
-          onChange={(e) => updateParam("difficulty", e.target.value)}
-          className="border p-2 rounded"
-        >
-          <option value="">All Difficulties</option>
-          <option value="Easy">Easy</option>
-          <option value="Medium">Medium</option>
-          <option value="Hard">Hard</option>
-        </select>
-
-        <select
-          value={status}
-          onChange={(e) => updateParam("status", e.target.value)}
-          className="border p-2 rounded"
-        >
-          <option value="">All Status</option>
-          <option value="Active">Active</option>
-          <option value="Completed">Completed</option>
-          <option value="Upcoming">Upcoming</option>
-        </select>
-
-        <select
-          value={sort}
-          onChange={(e) => updateParam("sort", e.target.value)}
-          className="border p-2 rounded"
-        >
-          <option value="newest">Newest</option>
-          <option value="oldest">Oldest</option>
-          <option value="difficulty">Difficulty</option>
-          <option value="endDate">End Date</option>
-        </select>
-
-        <input
-          type="text"
-          placeholder="Search..."
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          className="border p-2 rounded"
-        />
-
-        <button
-          onClick={resetFilters}
-          className="border px-4 py-2 rounded bg-gray-100"
-        >
-          Reset
-        </button>
-      </div>
-
-      <div className="grid gap-4">
-        {paginated.map((c) => (
-          <div key={c.id} className="border p-4 rounded shadow-sm">
-            <h2 className="font-semibold">{c.name}</h2>
-            <p>Status: {c.status}</p>
-            <p>
-              Difficulty:{" "}
-              {c.difficultyFilter?.join(", ") || "Any"}
-            </p>
-            <p>
-              Ends: {new Date(c.endDate).toLocaleDateString()}
-            </p>
+    <Layout>
+      {!id && (
+        <div className="space-y-4">
+          <h1 className="text-2xl font-bold">Challenges</h1>
+          <div className="grid gap-4">
+            {challenges.map((c, index) => (
+              <div
+                key={c.id}
+                ref={index === challenges.length - 1 ? lastChallengeRef : null}
+                className="border p-4 rounded shadow-sm"
+              >
+                <Link to={`/challenge/${c.id}`} className="font-semibold">
+                  {c.name}
+                </Link>
+                <p>Status: {c.status}</p>
+              </div>
+            ))}
           </div>
-        ))}
-
-        {processed.length === 0 && <p>No challenges found.</p>}
-      </div>
-
-      {totalPages > 1 && (
-        <div className="flex gap-3">
-          <button
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="border px-3 py-1 rounded disabled:opacity-50"
-          >
-            Prev
-          </button>
-
-          <span>
-            Page {page} of {totalPages}
-          </span>
-
-          <button
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            className="border px-3 py-1 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
+          {loading && <Loader2 className="animate-spin mx-auto" />}
         </div>
       )}
-    </div>
+
+      {id && challenge && (
+        <div className="space-y-6">
+          <Button asChild variant="ghost">
+            <Link to="/dashboard">
+              <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+            </Link>
+          </Button>
+
+          <h1 className="text-3xl font-bold">{challenge.name}</h1>
+          <p>{challenge.description}</p>
+
+          {challenge.ownerId === user?.id && challenge.status === "PENDING" && (
+            <Button onClick={handleActivateChallenge} disabled={isActivating}>
+              {isActivating ? <Loader2 className="animate-spin" /> : <PlayCircle />} Activate
+            </Button>
+          )}
+
+          {!leaderboard.some(m => m.userId === user?.id) && (
+            <Button onClick={handleJoinChallenge} disabled={isJoining}>
+              {isJoining ? <Loader2 className="animate-spin" /> : <Users />} Join
+            </Button>
+          )}
+        </div>
+      )}
+    </Layout>
   );
-}
+};
+
+export default ChallengePage;
