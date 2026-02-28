@@ -84,7 +84,7 @@ export interface DashboardResponse {
   };
   activeChallenges: Challenge[];
   recentActivity: Record<string, unknown>[];
-export type RegisterResponse = LoginResponse;
+}
 
 export interface LeaderboardMember {
   userId: string;
@@ -244,6 +244,25 @@ export const challengeApi = {
       {
         status,
       }
+    );
+    return response.data;
+  },
+
+  generateInvite: async (
+    challengeId: string,
+    data: { expiresInHours: number; maxUses: number }
+  ) => {
+    const response = await api.post<ApiResponse<any>>(
+      `/api/challenges/${challengeId}/invite`,
+      data
+    );
+    return response.data;
+  },
+
+  joinByCode: async (code: string) => {
+    const response = await api.post<ApiResponse<any>>(
+      "/api/challenges/join-by-code",
+      { code }
     );
     return response.data;
   },
