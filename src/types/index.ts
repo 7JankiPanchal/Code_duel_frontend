@@ -28,6 +28,8 @@ export interface Challenge {
   difficultyFilter?: string[];
   status?: "ACTIVE" | "PENDING" | "COMPLETED" | "CANCELLED";
   minSubmissionsPerDay?: number;
+  description?: string;
+  ownerId?: string;
 }
 
 export interface ChallengeMember {
@@ -36,6 +38,10 @@ export interface ChallengeMember {
   avatar?: string;
   status: 'completed' | 'failed' | 'pending';
   joinedAt: string;
+  // Optional runtime / UI fields
+  streak?: number;
+  totalPenalty?: number;
+  dailyProgress?: DailyProgress[];
 }
 
 export interface DailyProgress {
@@ -104,6 +110,8 @@ export interface ChallengeInvite {
   challengeName: string;
   inviterId: string;
   inviterName: string;
+  // Friendly alias used in some UI components
+  senderName?: string;
   inviteeId: string;
   inviteeName: string;
   status: 'pending' | 'accepted' | 'rejected';
@@ -116,6 +124,7 @@ export interface UserSearchResult {
   email: string;
   username: string;
   avatar?: string;
+  leetcodeUsername?: string;
 }
 
 export interface DashboardResponse {

@@ -11,7 +11,7 @@ import ChallengeCard from "@/components/dashboard/ChallengeCard";
 import InviteRequests from "@/components/dashboard/InviteRequests";
 import EmptyState from "@/components/common/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
-import { dashboardApi, challengeApi, TodayStatusResponse, DashboardResponse, ApiResponse, DashboardStats } from "@/lib/api";
+import { dashboardApi } from "@/lib/dashboardApi";
 import { useToast } from "@/hooks/use-toast";
 import { Stats, ActivityData, ChartData, Challenge } from "@/types";
 
@@ -36,60 +36,29 @@ const Dashboard: React.FC = () => {
   const loadDashboardData = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      // Load all dashboard data in parallel
-      const [
-        dashboardResponse,
-        todayResponse,
-        challengesResponse,
-        statsResponse,
-        activityResponse,
-        chartResponse,
-      ] = await Promise.all([
+      const [overview, activityRes, chartRes] = await Promise.all([
         dashboardApi.getOverview(),
-        dashboardApi.getTodayStatus(),
-        challengeApi.getAll(), // Load all challenges, not just active
-        dashboardApi.getStats(),
         dashboardApi.getActivityHeatmap(),
         dashboardApi.getSubmissionChart(),
       ]);
 
-      // Update stats with real data
-      if (statsResponse.success && statsResponse.data) {
-        const statsData = statsResponse.data;
-        const todaySummary = todayResponse?.data?.summary;
-        const dashboardSummary = dashboardResponse?.data?.summary;
-
+      if (overview) {
         setStats({
-          todayStatus:
-            todaySummary?.completed === todaySummary?.totalChallenges
-              ? ("completed" as const)
-              : ("pending" as const),
-          todaySolved: todaySummary?.completed || 0,
-          todayTarget: todaySummary?.totalChallenges || 0,
-          currentStreak: statsData.currentStreak || 0,
-          longestStreak: statsData.longestStreak || 0,
-          totalPenalties: statsData.totalPenalties || 0,
-          activeChallenges: dashboardSummary?.activeChallenges || 0,
-          totalSolved: statsData.totalSubmissions || 0,
+          todayStatus: "completed",
+          todaySolved: overview.stats?.todaySolved || 0,
+          todayTarget: overview.stats?.todayTarget || 0,
+          currentStreak: overview.stats?.currentStreak || 0,
+          longestStreak: overview.stats?.longestStreak || 0,
+          totalPenalties: overview.stats?.totalPenalties || 0,
+          activeChallenges: overview.challenges?.length || 0,
+          totalSolved: overview.stats?.totalSolved || 0,
         });
+        setChallenges(overview.challenges || []);
       }
 
-      // Update activity heatmap
-      if (activityResponse.success && activityResponse.data) {
-        setActivityData(activityResponse.data as ActivityData[]);
-      }
-
-      // Update chart data
-      if (chartResponse.success && chartResponse.data) {
-        setChartData(chartResponse.data as ChartData[]);
-      }
-
-      // Update challenges list
-      if (challengesResponse.success && challengesResponse.data) {
-        // the backend shape is largely compatible with our Challenge type
-        setChallenges(challengesResponse.data as Challenge[]);
-      }
-    } catch (error: unknown) {
+      if (activityRes) setActivityData(activityRes);
+      if (chartRes) setChartData(chartRes);
+    } catch (error) {
       console.error("Failed to load dashboard:", error);
       toast({
         title: "Failed to load dashboard",
@@ -106,20 +75,18 @@ const Dashboard: React.FC = () => {
   }, [loadDashboardData]);
 
   return (
-  <Layout>
+    <Layout>
       <div className="space-y-8">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold">
-              Welcome back,{" "}
-              <span className="gradient-text">{user?.name || "Developer"}</span>
+              Welcome back, <span className="text-primary">{user?.name || "Developer"}</span>
             </h1>
             <p className="text-muted-foreground mt-1">
               Track your daily coding progress and stay consistent
             </p>
           </div>
-          <Button asChild className="gradient-primary sm:w-auto w-full">
+          <Button asChild className="sm:w-auto w-full">
             <Link to="/create-challenge" className="gap-2">
               <Plus className="h-4 w-4" />
               New Challenge
@@ -127,7 +94,6 @@ const Dashboard: React.FC = () => {
           </Button>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Current Streak"
@@ -145,7 +111,6 @@ const Dashboard: React.FC = () => {
             icon={Target}
             variant="primary"
           />
-
           <StatsCard
             title="Active Challenges"
             value={stats.activeChallenges}
@@ -162,29 +127,19 @@ const Dashboard: React.FC = () => {
           />
         </div>
 
-        {/* Invite Requests */}
         <InviteRequests />
 
-        {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Today's Status */}
           <div className="lg:col-span-1">
             <TodayStatus stats={stats} />
           </div>
-
-          {/* Right Column - Chart */}
           <div className="lg:col-span-2">
-            <ProgressChart
-              data={chartData}
-              title="Daily Submissions (Last 30 Days)"
-            />
+            <ProgressChart data={chartData} title="Daily Submissions (Last 30 Days)" />
           </div>
         </div>
 
-        {/* Activity Heatmap */}
         <ActivityHeatmap data={activityData} title="Contribution Graph" />
 
-        {/* Active Challenges */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Active Challenges</h2>
@@ -192,7 +147,6 @@ const Dashboard: React.FC = () => {
               <Link to="/challenges">View all</Link>
             </Button>
           </div>
-
 
           {challenges.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -207,7 +161,7 @@ const Dashboard: React.FC = () => {
               description="Create or join a challenge to start competing with others and stay motivated!"
               action={{
                 label: "Create Challenge",
-                onClick: () => { },
+                onClick: () => {},
               }}
             />
           )}

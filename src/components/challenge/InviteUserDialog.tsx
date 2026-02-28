@@ -33,23 +33,23 @@ const InviteUserDialog: React.FC<InviteUserDialogProps> = ({
   existingMemberIds = [],
 }) => {
   const { toast } = useToast();
+
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<UserSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
   const [sendingId, setSendingId] = useState<string | null>(null);
+
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const isMountedRef = useRef(true);
 
-  // Cleanup on unmount: cancel pending debounce, abort in-flight request, mark unmounted
+  // Cleanup on unmount
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
       abortControllerRef.current?.abort();
     };
   }, []);
@@ -57,11 +57,9 @@ const InviteUserDialog: React.FC<InviteUserDialogProps> = ({
   const handleSearch = (value: string) => {
     setQuery(value);
 
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
 
-    // Abort any in-flight request from a previous search
+    // Abort previous request
     abortControllerRef.current?.abort();
 
     if (value.trim().length < 2) {
@@ -82,19 +80,13 @@ const InviteUserDialog: React.FC<InviteUserDialogProps> = ({
           setResults([]);
         }
       } catch (err: any) {
-        // Ignore AbortError / Axios cancellation — triggered intentionally when a newer search starts
         const isAbortOrCancel =
-          (err instanceof Error &&
-            (err.name === "AbortError" || err.name === "CanceledError")) ||
-          (err && (err as any).code === "ERR_CANCELED");
-        if (!isAbortOrCancel) {
-          setResults([]);
-        }
+          err?.name === "AbortError" ||
+          err?.name === "CanceledError" ||
+          err?.code === "ERR_CANCELED";
+        if (!isAbortOrCancel) setResults([]);
       } finally {
-        // Only clear the searching flag if this is still the current request
-        if (abortControllerRef.current === controller) {
-          setIsSearching(false);
-        }
+        if (abortControllerRef.current === controller) setIsSearching(false);
       }
     }, 400);
   };
@@ -126,7 +118,7 @@ const InviteUserDialog: React.FC<InviteUserDialogProps> = ({
 
   const handleOpenChange = (value: boolean) => {
     if (!value) {
-      // Cancel any pending debounce and in-flight search when dialog closes
+      // Reset state on close
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
       abortControllerRef.current?.abort();
       setQuery("");
@@ -168,10 +160,7 @@ const InviteUserDialog: React.FC<InviteUserDialogProps> = ({
           {/* Results */}
           <ScrollArea className="h-64" aria-busy={isSearching} aria-live="polite">
             {isSearching && (
-              <div
-                className="flex items-center justify-center py-8"
-                role="status"
-              >
+              <div className="flex items-center justify-center py-8" role="status">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 <span className="sr-only">Searching for users…</span>
               </div>
@@ -179,7 +168,7 @@ const InviteUserDialog: React.FC<InviteUserDialogProps> = ({
 
             {!isSearching && query.trim().length >= 2 && results.length === 0 && (
               <p className="text-center text-sm text-muted-foreground py-8">
-                No users found for {"\""}{query}{"\""}
+                No users found for "{query}"
               </p>
             )}
 
@@ -203,34 +192,24 @@ const InviteUserDialog: React.FC<InviteUserDialogProps> = ({
                     >
                       <Avatar className="h-9 w-9">
                         <AvatarImage src={user.avatar} alt={user.username} />
-                        <AvatarFallback>
-                          {user.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
+                        <AvatarFallback>{user.username.charAt(0).toUpperCase()}</AvatarFallback>
                       </Avatar>
 
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">
-                          {user.username}
-                        </p>
+                        <p className="font-medium text-sm truncate">{user.username}</p>
                         <p className="text-xs text-muted-foreground truncate">
-                          LC: {user.leetcodeUsername}
+                          LC: {user.leetcodeUsername || "-"}
                         </p>
                       </div>
 
                       {isAlreadyMember ? (
-                        <Badge
-                          variant="outline"
-                          className="text-xs shrink-0"
-                        >
+                        <Badge variant="outline" className="text-xs shrink-0">
                           Member
                         </Badge>
                       ) : isInvited ? (
                         <Badge
                           variant="outline"
-                          className={cn(
-                            "text-xs shrink-0 gap-1",
-                            "bg-success/10 text-success border-success/20"
-                          )}
+                          className={cn("text-xs shrink-0 gap-1", "bg-success/10 text-success border-success/20")}
                         >
                           <Check className="h-3 w-3" />
                           Invited

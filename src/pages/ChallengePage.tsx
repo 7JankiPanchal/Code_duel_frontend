@@ -53,7 +53,7 @@ const ChallengePage: React.FC = () => {
 
       setChallenges(prev => [...prev, ...data]);
       setHasMore(data.length === PAGE_SIZE);
-      setTotalPages(Math.ceil(res.total || 1));
+      setTotalPages(Math.ceil((res?.data?.length || 1) / PAGE_SIZE));
     } catch (error) {
       toast({ title: "Error loading challenges", variant: "destructive" });
     } finally {

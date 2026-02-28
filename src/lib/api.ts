@@ -187,7 +187,7 @@ export const challengeApi = {
     return response.data;
   },
 
-  getAll: async (params?: { status?: string; owned?: boolean }) => {
+  getAll: async (params?: { status?: string; owned?: boolean; page?: number; limit?: number }) => {
     const response = await api.get<ApiResponse<Challenge[]>>(
       "/api/challenges",
       { params }
